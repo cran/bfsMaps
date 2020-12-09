@@ -58,9 +58,13 @@ Neighbours <- function(map, id = NULL){
 
 SwissLocator <- function(){
   xy.sp <- SpatialPoints(data.frame(locator()))
-  # we must apply some kind of proj4string since 2017 ...
   polg.map <- RequireMap("polg.map")
-  proj4string(xy.sp) <- proj4string(polg.map)
+
+  # we must apply some kind of proj4string since 2017 ...
+  # project string is not completely set with that statement! (no to +towgs84=674...)
+  # proj4string(xy.sp) <- proj4string(polg.map)
+  xy.sp@proj4string <- polg.map@proj4string
+
   xy.bfsnr <- over(xy.sp, polg.map)[, 1]
 
   note <- gettextf("\033[36m\nNote: ------\n  Found communities: %s.\n\n\033[39m", paste(xy.bfsnr, collapse = ", "))
@@ -105,6 +109,77 @@ CombineKant <- function(id, g, map=RequireMap("kant.map")){
   CombinePolygons(map, grp)
 
 }
+
+
+RemoveHoles <- function (x) {
+
+  if (!any(which(utils::installed.packages()[, 1] %in% "maptools")))
+    stop("please install maptools package before running this function")
+
+  xp <- slot(x, "polygons")
+
+  holes <- lapply(xp, function(x) sapply(methods::slot(x, "Polygons"),
+                                         methods::slot, "hole"))
+  res <- lapply(1:length(xp),
+                function(i) methods::slot(xp[[i]], "Polygons")[!holes[[i]]])
+
+  IDs <- row.names(x)
+
+  x.fill <- sp::SpatialPolygons(lapply(1:length(res),
+                                       function(i) sp::Polygons(res[[i]],
+                                                  ID = IDs[i])), proj4string = sp::CRS(sp::proj4string(x)))
+  methods::slot(x.fill, "polygons") <- lapply(methods::slot(x.fill, "polygons"),
+                                              maptools::checkPolygonsHoles)
+  methods::slot(x.fill, "polygons") <- lapply(methods::slot(x.fill, "polygons"),
+                                              "comment<-", NULL)
+  pids <- sapply(methods::slot(x.fill, "polygons"),
+                 function(x) methods::slot(x,"ID"))
+
+  x.fill <- sp::SpatialPolygonsDataFrame(x.fill,
+                                         data.frame(row.names = pids, ID = 1:length(pids)))
+
+  return(x.fill)
+
+}
+
+
+
+
+DownloadBfSMaps <- function(url="https://www.bfs.admin.ch/bfsstatic/dam/assets/11927607/master",
+                            path=paste0(path.expand("~"), "/MapData")) {
+
+  cat("\nAttempt to download mapdata from Swiss Federal Office of Statistics (SFSO):\n\n")
+
+  cat("start downloading...")
+  temp <- tempfile()
+  download.file(url = url, temp, mode="wb", quiet = TRUE)
+  cat("OK\n")
+
+  cat("unzipping file...")
+  unzip(temp, exdir=path)
+  cat("OK\n")
+
+  cat("renaming folders...")
+  flaeche <- grep("fl.che(?!.*/)", list.dirs(path), value=TRUE, perl = TRUE)
+  for(x in flaeche){
+    file.rename(x, gsub("fl.che", "fl\xE4che", x))
+  }
+  cat("OK\n\n")
+
+  opt <- gettextf('options(bfsMaps.base="%s")',
+                  paste(path, list.files(path),
+                        grep(pattern = "GEOM",
+                             x = list.files(paste(path, list.files(path), sep="/")),
+                             value = TRUE),
+                        sep="/"))
+
+  cat(gettextf("Enter the following entry in your .RProfile file:\n  %s ", opt), "\n\n")
+
+  invisible(opt)
+
+}
+
+
 
 
 # with(d.bfsrg,
@@ -257,3 +332,4 @@ CombineKant <- function(id, g, map=RequireMap("kant.map")){
 #
 #
 #
+

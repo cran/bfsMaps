@@ -1,4 +1,6 @@
 
+
+
 # ****************************************************************************
 #
 # Projekt:	      bfsMaps.r
@@ -50,10 +52,15 @@
 #   "SO", "BS", "BL", "SH", "AR", "AI", "SG", "GR", "AG", "TG", "TI",
 #   "VD", "VS", "NE", "GE", "JU")
 
+
+
+
 utils::globalVariables(c("d.bfsrg","tkart","kt"))
 
 
 AddLakes <- function(categ=1:2, col="lightskyblue1", border="lightskyblue3", lwd=1, ...) {
+
+
 
   # Fuegt Seen einer CH-Karte hinzu
   # categ definiert die Kategorien, wovon es 2 (von den grossen zu den kleinen) gibt
@@ -149,7 +156,10 @@ LoadMap <- function(name_x,
                     basedir=getOption("bfsMaps.base",
                                       default = file.path(find.package("bfsMaps"), "extdata"))) {
 
-  # loads one map name_x
+  if(getOption("debug", default = FALSE))
+    cat(gettextf("Used basedir: %s\n", basedir))
+
+  # load map named name_x
   fn <- gettextf("%s/maps.csv", basedir)
 
   # check if file exists in basedir,
@@ -171,16 +181,26 @@ LoadMap <- function(name_x,
 
       fn <- character(length(name_x))
       for(i in 1:length(fn)){
-        jj <- grepl(name_x[i], maps$name_x)
+#        jj <- grepl(name_x[i], maps$name_x)
+# we need exactly matching file names here, not similar ones
+        jj <- match(name_x[i], maps$name_x)
 
-        # at least on file exists, use the last if multiple
-        fn[i] <- maps$path[tail(which(jj), 1)]
+        if(all(is.na(jj)))
+          stop(gettextf("No entry in maps.csv for shortname:  %s \n", name_x[i]))
+
+        # at least on file exists, use the last if there are several
+        fn[i] <- maps$path[tail(jj, 1)]
       }
     }
 
   fn <- gettextf("%s/%s", basedir, fn)
+  if(!file.exists(fn))
+    stop(gettextf("Map file could not be found as:  %s \n", fn))
 
-  opt <- options(stringsAsFactors = FALSE)
+  opt <- options(stringsAsFactors = FALSE,
+                 rgdal_show_exportToProj4_warnings="none")
+  # do not display these warnings
+  # https://cran.r-project.org/web/packages/rgdal/vignettes/PROJ6_GDAL3.html
   on.exit(options(opt))
 
   map <- rgdal::readOGR(fn, verbose = FALSE)
@@ -278,7 +298,7 @@ PlotCH <- function(col="grey90", pbg="white", main="", col.vf=NA,
                    lwd=1, tmtxt=TRUE, add=FALSE, ...) {
 
   # plot CH-border
-  ch <- bfsMaps::CombineKant(1:26, g = 1,  map = RequireMap("kant.map"))
+  ch <- CombineKant(1:26, g = 1,  map = RequireMap("kant.map"))
   # delete holes (lakes)
   h <- sapply(ch@polygons[[1]]@Polygons, slot, "hole")
   ch@polygons[[1]]@Polygons[h] <- NULL
@@ -384,11 +404,14 @@ PlotMSRe <- function(id=NULL, col=NA, pbg="white", main="", border="grey", lwd=1
 PlotMapDot <- function(mar=c(5.1,4.1,0,1), oma=c(0,0,5,0), widths = c(2, 0.8)) {
 
   oldpar <- par(mar = mar, oma = oma)
-  on.exit(par(oldpar))
+  # on.exit(par(oldpar))
 
   layout(matrix(c(1, 2), nrow = 1, byrow = TRUE), widths=widths, TRUE)
 
 }
 
-
-
+.InternDummyFun <- function() {
+  # this is only to use a function from rgeos to be allowed to add the package to
+  # the depends list
+  gLength(readWKT("POINT(1 1)"))
+}
