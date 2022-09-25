@@ -51,20 +51,27 @@ Rivers are defined in the files:
 \item 00_TOPO/K4_flusyyyymmdd/c_shp/k4flusyyyymmdd44_ch2007.shp
 \item 00_TOPO/K4_flusyyyymmdd/c_shp/k4flusyyyymmdd55_ch2007.shp
 }
+For accessing the meta data, we can simply use\cr
+\preformatted{  RequireMap("see1.map")
+  head(tkart$see1.map@data)
+}
 }
 \value{None}
 
 \author{Andri Signorell <andri@signorell.net}
 
-\examples{\donttest{
-PlotKant()
-AddWaters(lakes=1, rivers=1, border="grey")
+\examples{
+try({
+  PlotKant()
+  AddWaters(lakes=1, rivers=1, border="grey")
+})
 
-PlotKant()
-AddLakes(categ=1)      # adds the lakes of category 1 to the map
-AddRivers(categ=1:2)   # adds the rivers of category 1 and 2 to the map
-
-}}
+try({
+  PlotKant()
+  AddLakes(categ=1)      # adds the lakes of category 1 to the map
+  AddRivers(categ=1:3)   # adds the rivers of category 1:3 to the map
+})
+}
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 \keyword{aplot}
