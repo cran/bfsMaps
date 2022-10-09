@@ -74,7 +74,7 @@
 #
 #
 # # https://www.priminfo.admin.ch/de/regionen
-#
+# # neu: https://www.priminfo.admin.ch/de/downloads/aktuell
 #
 # d.preg <- XLGetRange(file = "C:\\Users\\andri\\Desktop\\2019_THK_PRO\\praemienregionen_2020-version-2019-09-24.xlsx", sheet = "A_COM",
 #      range = c("A6:D6162"),
